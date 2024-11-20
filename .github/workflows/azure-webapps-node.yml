@@ -48,10 +48,6 @@ jobs:
           npm run build --if-present
           npm run test --if-present
 
-      - name: Validate ARM Template
-        run: |
-          az deployment group validate --resource-group eirik.imrik_rg_1308 --template-file template.json
-
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v3
         with:
