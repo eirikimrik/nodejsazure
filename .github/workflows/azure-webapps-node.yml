@@ -6,12 +6,12 @@ on:
   workflow_dispatch:
 
 env:
-  AZURE_WEBAPP_NAME: eirik-app             
-  AZURE_ACR_NAME: eirikacr                 
-  AZURE_RESOURCE_GROUP: eirik.imrik_rg_1308 
-  IMAGE_NAME: eirik-app                    
-  TAG: latest                             
-  NODE_VERSION: "20.x"                     
+  AZURE_WEBAPP_NAME: eirik-app
+  AZURE_ACR_NAME: eirikacr
+  AZURE_RESOURCE_GROUP: eirik.imrik_rg_1308
+  IMAGE_NAME: eirik-app
+  TAG: latest
+  NODE_VERSION: "20.x"
 
 jobs:
   build-and-push:
@@ -70,10 +70,13 @@ jobs:
             --container-registry-user ${{ secrets.AZURE_CONTAINER_REGISTRY_USERNAME }} \
             --container-registry-password ${{ secrets.AZURE_CONTAINER_REGISTRY_PASSWORD }}
 
+      # Test suite: Infra tests
+      - name: Run infrastructure tests
+        run: bash test-scripts/infrastructure-tests.sh
+
       # Step 3: Restart the Azure Web App
       - name: Restart Azure Web App
         run: |
           az webapp restart \
             --name ${{ env.AZURE_WEBAPP_NAME }} \
             --resource-group ${{ env.AZURE_RESOURCE_GROUP }}
-
