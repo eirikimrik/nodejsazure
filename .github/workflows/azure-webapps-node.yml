@@ -1,4 +1,4 @@
-name: Build, Push to ACR, and Deploy to AKS
+name: Build, Push to ACR, and Deploy to Azure Web App
 
 on:
   push:
@@ -6,13 +6,12 @@ on:
   workflow_dispatch:
 
 env:
-  AZURE_WEBAPP_NAME: eirik-app             # Name of your Azure Web App
-  AZURE_ACR_NAME: eirikacr                 # Name of your Azure Container Registry
-  AZURE_RESOURCE_GROUP: eirik.imrik_rg_1308 # Resource group for ACR and AKS
-  IMAGE_NAME: eirik-app                    # Docker image name
-  TAG: latest                              # Docker tag
-  NODE_VERSION: "20.x"                     # Node.js version to use
-  AKS_CLUSTER_NAME: eirik-aks              # Name of your AKS cluster
+  AZURE_WEBAPP_NAME: eirik-app             
+  AZURE_ACR_NAME: eirikacr                 
+  AZURE_RESOURCE_GROUP: eirik.imrik_rg_1308 
+  IMAGE_NAME: eirik-app                    
+  TAG: latest                             
+  NODE_VERSION: "20.x"                     
 
 jobs:
   build-and-push:
@@ -60,13 +59,21 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      # Step 2: Configure Kubernetes Cluster Context
-      - name: Configure Kubernetes Cluster
+      # Step 2: Update Azure Web App to use the new container image
+      - name: Deploy to Azure Web App
         run: |
-          az aks get-credentials --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --name ${{ env.AKS_CLUSTER_NAME }}
+          az webapp config container set \
+            --name ${{ env.AZURE_WEBAPP_NAME }} \
+            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+            --container-image-name ${{ env.AZURE_ACR_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:${{ env.TAG }} \
+            --container-registry-url https://${{ env.AZURE_ACR_NAME }}.azurecr.io \
+            --container-registry-user ${{ secrets.AZURE_CONTAINER_REGISTRY_USERNAME }} \
+            --container-registry-password ${{ secrets.AZURE_CONTAINER_REGISTRY_PASSWORD }}
 
-      # Step 3: Apply Kubernetes Manifests
-      - name: Deploy to AKS
+      # Step 3: Restart the Azure Web App
+      - name: Restart Azure Web App
         run: |
-          kubectl apply -f deployment.yaml
-          kubectl apply -f service.yaml
+          az webapp restart \
+            --name ${{ env.AZURE_WEBAPP_NAME }} \
+            --resource-group ${{ env.AZURE_RESOURCE_GROUP }}
+
